@@ -1,10 +1,11 @@
 use super::token::Token;
+use std::cell::Cell;
 
 pub struct Lexer<'a> {
   input: &'a str,
-  pos: usize,
-  read_pos: usize,
-  pub ch: char,
+  pos: Cell<usize>,
+  read_pos: Cell<usize>,
+  pub ch: Cell<char>,
 }
 
 impl<'a> Lexer<'a> {
@@ -13,25 +14,25 @@ impl<'a> Lexer<'a> {
 
     Lexer {
       input: &inp.as_str(),
-      pos: 0,
-      read_pos: c.len_utf8(),
-      ch: c,
+      pos: Cell::new(0),
+      read_pos: Cell::new(c.len_utf8()),
+      ch: Cell::new(c),
     }
   }
 
-  pub fn read_char(&mut self) {
-    if self.read_pos >= self.input.len() {
-      self.ch = 0 as char;
+  pub fn read_char(&self) {
+    if self.read_pos.get() >= self.input.len() {
+      self.ch.set(0 as char);
     } else {
-      let ch = self.input[self.read_pos..].chars().next().unwrap();
-      self.ch = ch;
-      self.pos = self.read_pos;
-      self.read_pos = self.read_pos + ch.len_utf8();
+      let ch = self.input[self.read_pos.get()..].chars().next().unwrap();
+      self.ch.set(ch);
+      self.pos.set(self.read_pos.get());
+      self.read_pos.set(self.read_pos.get() + ch.len_utf8());
     }
   }
 
-  pub fn next_token(&mut self) -> Token {
-    let t = match self.ch {
+  pub fn next_token(&self) -> Token {
+    let t = match self.ch.get() {
       '=' => Token::assign,
       '+' => Token::plus,
       ',' => Token::comma,
@@ -41,9 +42,8 @@ impl<'a> Lexer<'a> {
       '{' => Token::lbrace,
       '}' => Token::rbrace,
       _ => {
-        if is_valid_letter(self.ch) {
-          let i = self.read_identifier();
-          Token::ident(i)
+        if is_valid_letter(self.ch.get()) {
+          Token::ident(self.read_identifier())
         } else {
           Token::illegal
         }
@@ -55,12 +55,12 @@ impl<'a> Lexer<'a> {
   }
 
   // fn read_identifier(&'a mut self) -> &'a str {
-  fn read_identifier(&mut self) -> &str {
-    let lo = self.pos;
-    while is_valid_letter(self.ch) {
+  fn read_identifier(&self) -> &str {
+    let lo = self.pos.get();
+    while is_valid_letter(self.ch.get()) {
       self.read_char();
     }
-    &self.input[lo..self.pos]
+    &self.input[lo..self.pos.get()]
   }
 }
 

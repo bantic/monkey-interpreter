@@ -5,15 +5,17 @@ use std::io;
 
 fn main() {
   // get stdio
-  let mut line = String::new();
-  let mut repl = io::stdin();
+  let repl = io::stdin();
   loop {
+    let mut line = String::new();
     let n = match repl.read_line(&mut line) {
       Ok(n) => n,
       _ => continue,
     };
-    let mut lex = lexer::Lexer::new(&line);
-    lex.read_char();
+    println!("got line: {}", line);
+    let lex = lexer::Lexer::new(&line);
+    let t = lex.next_token();
+    println!("got t: {:?}", t);
   }
 }
 
@@ -30,13 +32,13 @@ mod tests {
   fn check_lex() {
     let test = String::from("afoo");
     let lexer = super::lexer::Lexer::new(&test);
-    assert_eq!(lexer.ch, 'a');
+    assert_eq!(lexer.ch.get(), 'a');
   }
 
   #[test]
   fn check_lex_next_token() {
     let test = String::from("+=+=");
-    let mut lexer = super::lexer::Lexer::new(&test);
+    let lexer = super::lexer::Lexer::new(&test);
     let t = lexer.next_token();
     assert_eq!(t, super::token::Token::plus);
 
