@@ -13,12 +13,20 @@ pub enum Token<'a> {
   lbrace,
   rbrace,
   function,
-  var,
+  r#let,
   debug,
+}
+
+pub fn lookup_ident(str: &str) -> Token {
+  match str {
+    "fn" => Token::function,
+    "let" => Token::r#let,
+    _ => Token::ident(str),
+  }
 }
 
 // // let x = fn a();
 // struct Token<'a> {
 //   Type: TokenType<'a>,
 //   Literal: String,
-// }
+//

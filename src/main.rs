@@ -45,4 +45,17 @@ mod tests {
     let t = lexer.next_token();
     assert_eq!(t, super::token::Token::assign);
   }
+  #[test]
+  fn check_skip_whitespace() {
+    let test = "            fn";
+    let lexer = super::lexer::Lexer::new(test);
+    let tok = lexer.next_token();
+    assert_eq!(tok, super::token::Token::function);
+  }
+  #[test]
+  fn check_read_number() {
+    let lexer = super::lexer::Lexer::new("12345");
+    let tok = lexer.next_token();
+    assert_eq!(tok, super::token::Token::int(12345));
+  }
 }
