@@ -40,23 +40,52 @@ impl<'a> Lexer<'a> {
     self.read_pos.set(self.read_pos.get() + ch.len_utf8());
   }
 
+  pub fn peek_char(&self) -> char {
+    if self.read_pos.get() > self.input.len() {
+      '\0'
+    } else {
+      self.input[self.read_pos.get()..].chars().next().unwrap()
+    }
+  }
+
   pub fn next_token(&self) -> Token {
     self.skip_whitespace();
 
     let tok = match self.ch.get() {
-      '=' => Token::Assign,
+      '=' => {
+        if self.peek_char() == '=' {
+          self.read_char();
+          Token::Eq
+        } else {
+          Token::Assign
+        }
+      }
       '+' => Token::Plus,
+      '-' => Token::Minus,
+      '!' => {
+        if self.peek_char() == '=' {
+          self.read_char();
+          Token::NotEq
+        } else {
+          Token::Bang
+        }
+      }
+      '*' => Token::Asterisk,
+      '/' => Token::Slash,
+      '<' => Token::Lt,
+      '>' => Token::Gt,
       ',' => Token::Comma,
       ';' => Token::Semicolon,
       '(' => Token::Lparen,
       ')' => Token::Rparen,
       '{' => Token::Lbrace,
       '}' => Token::Rbrace,
+      '\0' => Token::Eof,
       _ => {
         if is_valid_letter(self.ch.get()) {
-          lookup_ident(self.read_identifier())
+          return lookup_ident(self.read_identifier());
         } else if self.ch.get().is_numeric() {
-          Token::Int(self.read_number())
+          return Token::Int(self.read_number());
         } else {
           Token::Illegal
         }
@@ -86,7 +115,7 @@ impl<'a> Lexer<'a> {
   }
 
   fn skip_whitespace(&self) {
-    while self.ch.get().is_whitespace() {
+    while self.ch.get().is_whitespace() || self.ch.get() == '\n' || self.ch.get() == '\r' {
       self.read_char();
     }
   }
@@ -135,5 +164,59 @@ mod tests {
     let lexer = Lexer::new("12345");
     let tok = lexer.next_token();
     assert_eq!(tok, Token::Int(12345));
+  }
+
+  #[test]
+  fn check_lexer_robustness() {
+    let input = "let if true (9 > 16)
+    +
+    a =b
+    10000
+    5 == !x;
+    6 != z;
+    false fn = alphabet,<; { }
+    ";
+
+    let expect = [
+      Token::Let,
+      Token::If,
+      Token::True,
+      Token::Lparen,
+      Token::Int(9),
+      Token::Gt,
+      Token::Int(16),
+      Token::Rparen,
+      Token::Plus,
+      Token::Ident("a"),
+      Token::Assign,
+      Token::Ident("b"),
+      Token::Int(10000),
+      Token::Int(5),
+      Token::Eq,
+      Token::Bang,
+      Token::Ident("x"),
+      Token::Semicolon,
+      Token::Int(6),
+      Token::NotEq,
+      Token::Ident("z"),
+      Token::Semicolon,
+      Token::False,
+      Token::Function,
+      Token::Assign,
+      Token::Ident("alphabet"),
+      Token::Comma,
+      Token::Lt,
+      Token::Semicolon,
+      Token::Lbrace,
+      Token::Rbrace,
+      Token::Eof,
+    ];
+
+    let lexer = Lexer::new(input);
+
+    for expected_token in expect.iter() {
+      let tok = lexer.next_token();
+      assert_eq!(*expected_token, tok);
+    }
   }
 }

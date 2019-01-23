@@ -9,9 +9,13 @@ fn main() {
   loop {
     let mut line = String::new();
     repl.read_line(&mut line).expect("Failed to read line");
-    println!("got line: {}", line);
     let lex = lexer::Lexer::new(&line);
-    let t = lex.next_token();
-    println!("got t: {:?}", t);
+    loop {
+      let tok = lex.next_token();
+      println!("{:?}", tok);
+      if tok == token::Token::Eof {
+        break;
+      }
+    }
   }
 }
