@@ -95,3 +95,46 @@ impl<'a> Lexer<'a> {
 fn is_valid_letter(c: char) -> bool {
   c.is_alphabetic() || c == '_'
 }
+
+#[cfg(test)]
+mod tests {
+  use super::Lexer;
+  use super::Token;
+  use super::*;
+
+  #[test]
+  fn it_works() {
+    assert_eq!(2 + 2, 4);
+  }
+
+  #[test]
+  fn check_lex() {
+    let test = String::from("afoo");
+    let lexer = Lexer::new(&test);
+    assert_eq!(lexer.ch.get(), 'a');
+  }
+
+  #[test]
+  fn check_lex_next_token() {
+    let test = String::from("+=+=");
+    let lexer = Lexer::new(&test);
+    let t = lexer.next_token();
+    assert_eq!(t, Token::plus);
+
+    let t = lexer.next_token();
+    assert_eq!(t, Token::assign);
+  }
+  #[test]
+  fn check_skip_whitespace() {
+    let test = "            fn";
+    let lexer = Lexer::new(test);
+    let tok = lexer.next_token();
+    assert_eq!(tok, Token::function);
+  }
+  #[test]
+  fn check_read_number() {
+    let lexer = Lexer::new("12345");
+    let tok = lexer.next_token();
+    assert_eq!(tok, Token::int(12345));
+  }
+}
