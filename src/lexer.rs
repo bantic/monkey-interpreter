@@ -44,21 +44,21 @@ impl<'a> Lexer<'a> {
     self.skip_whitespace();
 
     let tok = match self.ch.get() {
-      '=' => Token::assign,
-      '+' => Token::plus,
-      ',' => Token::comma,
-      ';' => Token::semicolon,
-      '(' => Token::lparen,
-      ')' => Token::rparen,
-      '{' => Token::lbrace,
-      '}' => Token::rbrace,
+      '=' => Token::Assign,
+      '+' => Token::Plus,
+      ',' => Token::Comma,
+      ';' => Token::Semicolon,
+      '(' => Token::Lparen,
+      ')' => Token::Rparen,
+      '{' => Token::Lbrace,
+      '}' => Token::Rbrace,
       _ => {
         if is_valid_letter(self.ch.get()) {
           lookup_ident(self.read_identifier())
         } else if self.ch.get().is_numeric() {
-          Token::int(self.read_number())
+          Token::Int(self.read_number())
         } else {
-          Token::illegal
+          Token::Illegal
         }
       }
     };
@@ -100,7 +100,6 @@ fn is_valid_letter(c: char) -> bool {
 mod tests {
   use super::Lexer;
   use super::Token;
-  use super::*;
 
   #[test]
   fn it_works() {
@@ -119,22 +118,22 @@ mod tests {
     let test = String::from("+=+=");
     let lexer = Lexer::new(&test);
     let t = lexer.next_token();
-    assert_eq!(t, Token::plus);
+    assert_eq!(t, Token::Plus);
 
     let t = lexer.next_token();
-    assert_eq!(t, Token::assign);
+    assert_eq!(t, Token::Assign);
   }
   #[test]
   fn check_skip_whitespace() {
     let test = "            fn";
     let lexer = Lexer::new(test);
     let tok = lexer.next_token();
-    assert_eq!(tok, Token::function);
+    assert_eq!(tok, Token::Function);
   }
   #[test]
   fn check_read_number() {
     let lexer = Lexer::new("12345");
     let tok = lexer.next_token();
-    assert_eq!(tok, Token::int(12345));
+    assert_eq!(tok, Token::Int(12345));
   }
 }

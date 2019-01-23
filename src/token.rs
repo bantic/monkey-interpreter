@@ -1,32 +1,26 @@
 #[derive(Debug, PartialEq)]
 pub enum Token<'a> {
-  illegal,
-  eof,
-  ident(&'a str),
-  int(i64),
-  assign,
-  plus,
-  comma,
-  semicolon,
-  lparen,
-  rparen,
-  lbrace,
-  rbrace,
-  function,
-  r#let,
-  debug,
+  Illegal,
+  Eof,
+  Ident(&'a str),
+  Int(i64),
+  Assign,
+  Plus,
+  Comma,
+  Semicolon,
+  Lparen,
+  Rparen,
+  Lbrace,
+  Rbrace,
+  Function,
+  Let,
+  Debug,
 }
 
 pub fn lookup_ident(str: &str) -> Token {
   match str {
-    "fn" => Token::function,
-    "let" => Token::r#let,
-    _ => Token::ident(str),
+    "fn" => Token::Function,
+    "let" => Token::Let,
+    _ => Token::Ident(str),
   }
 }
-
-// // let x = fn a();
-// struct Token<'a> {
-//   Type: TokenType<'a>,
-//   Literal: String,
-//

@@ -8,10 +8,7 @@ fn main() {
   let repl = io::stdin();
   loop {
     let mut line = String::new();
-    let n = match repl.read_line(&mut line) {
-      Ok(n) => n,
-      _ => continue,
-    };
+    repl.read_line(&mut line).expect("Failed to read line");
     println!("got line: {}", line);
     let lex = lexer::Lexer::new(&line);
     let t = lex.next_token();
