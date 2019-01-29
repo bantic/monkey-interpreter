@@ -53,7 +53,7 @@ impl<'a> Parser<'a> {
   }
 
   pub fn next_token(&mut self) {
-    self.cur = self.peek.clone();
+    self.cur = self.peek;
     self.peek = self.lex.next_token();
   }
 }
