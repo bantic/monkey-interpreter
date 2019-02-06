@@ -11,7 +11,7 @@ pub struct Expr {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ExprKind {
+enum ExprKind {
   Literal(i32),
   Ident(String),
 }
@@ -121,7 +121,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_it() {
+  fn test_simple_let_statement() {
     let lexer = lexer::Lexer::new("let x = 5;");
     let parser = Parser::new(&lexer);
     let s = parser.parse();
