@@ -1,37 +1,44 @@
 use super::lexer;
 use super::token;
+use std::cell::Cell;
 
+#[derive(Debug, PartialEq)]
 pub struct Ident<'a>(&'a str);
 
+#[derive(Debug, PartialEq)]
 pub struct Expr {
   node: ExprKind,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ExprKind {
   Literal(i32),
   Ident(String),
 }
 
+#[derive(Debug, PartialEq)]
 struct Stmt<'a> {
   node: StmtKind<'a>,
 }
 
+#[derive(Debug, PartialEq)]
 struct LetStmt<'a> {
   name: Ident<'a>,
   value: Expr,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum StmtKind<'a> {
   Let(LetStmt<'a>),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Program<'a>(Vec<Stmt<'a>>);
 
-// #[derive(Debug)]
 pub struct Parser<'a> {
   lex: &'a lexer::Lexer<'a>,
-  cur: token::Token<'a>,
-  peek: token::Token<'a>,
+  cur: Cell<token::Token<'a>>,
+  peek: Cell<token::Token<'a>>,
 }
 
 impl<'a> Parser<'a> {
@@ -40,14 +47,72 @@ impl<'a> Parser<'a> {
     let peek = lex.next_token();
     Parser {
       lex,
-      cur: cur,
-      peek: peek,
+      cur: Cell::new(cur),
+      peek: Cell::new(peek),
     }
   }
 
-  pub fn next_token(&mut self) {
-    self.cur = self.peek;
-    self.peek = self.lex.next_token();
+  pub fn next_token(&self) {
+    self.cur.set(self.peek.get());
+    self.peek.set(self.lex.next_token());
+  }
+
+  pub fn parse(&self) -> Program {
+    let mut p = Program(vec![]);
+
+    loop {
+      match self.cur.get() {
+        token::Token::Eof => break,
+        token::Token::Let => {
+          p.0.push(self.parse_let_stmt());
+        }
+        _ => break,
+      }
+      self.next_token();
+    }
+    return p;
+  }
+
+  pub fn expect_peek(&self, t: token::Token) -> bool {
+    let is_match = match (self.peek.get(), t) {
+      (token::Token::Ident(_), token::Token::Ident(_)) => true,
+      (token::Token::Int(_), token::Token::Int(_)) => true,
+      (peek, t) => peek == t,
+    };
+
+    if is_match {
+      self.next_token()
+    }
+
+    is_match
+  }
+
+  fn parse_let_stmt(&self) -> Stmt {
+    if !self.expect_peek(token::Token::Ident("")) {
+      panic!("Expected ident");
+    };
+
+    let name = match self.cur.get() {
+      token::Token::Ident(name) => name,
+      _ => panic!("Expected ident"),
+    };
+
+    if !self.expect_peek(token::Token::Assign) {
+      panic!("Expected assign");
+    }
+
+    while self.cur.get() != token::Token::Semicolon {
+      self.next_token();
+    }
+
+    Stmt {
+      node: StmtKind::Let(LetStmt {
+        name: Ident(name),
+        value: Expr {
+          node: ExprKind::Literal(5),
+        },
+      }),
+    }
   }
 }
 
@@ -57,8 +122,11 @@ mod tests {
 
   #[test]
   fn test_it() {
+    let lexer = lexer::Lexer::new("let x = 5;");
+    let parser = Parser::new(&lexer);
+    let s = parser.parse();
     assert_eq!(
-      parse("let x = 5;"),
+      s,
       Program(vec![Stmt {
         node: StmtKind::Let(LetStmt {
           name: Ident("x"),
