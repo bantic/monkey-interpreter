@@ -1,38 +1,31 @@
 use super::lexer;
 use super::token;
 
-// Node
-//
-// Program
-//  - statements: Vec<StatementNode>
-//
-//  ExpressionNode
-//
-// pub struct program {
-//
-// }
+pub struct Ident<'a>(&'a str);
 
-pub enum Operator {
-  Minus,
-  Plus,
+pub struct Expr {
+  node: ExprKind,
 }
 
-pub enum Expression {
+pub enum ExprKind {
   Literal(i32),
-  Binary(Box<Expression>, Operator, Box<Expression>),
-  Unary(Operator, Box<Expression>),
+  Ident(String),
 }
 
-pub enum Statement {
-  Let(String, Expression),
+struct Stmt<'a> {
+  node: StmtKind<'a>,
 }
 
-//pub struct program {
-//  stmts: Vec<syntax>,
-//}
+struct LetStmt<'a> {
+  name: Ident<'a>,
+  value: Expr,
+}
 
-pub struct Program(Vec<Statement>);
-// pub struct stmt(Vec<syntax>);
+pub enum StmtKind<'a> {
+  Let(LetStmt<'a>),
+}
+
+pub struct Program<'a>(Vec<Stmt<'a>>);
 
 // #[derive(Debug)]
 pub struct Parser<'a> {
@@ -58,19 +51,6 @@ impl<'a> Parser<'a> {
   }
 }
 
-// trait Node<'a> {
-//   fn literal() -> token::Token<'a>;
-// }
-
-// trait Statement<'a> {
-//   fn literal() -> token::Token<'a>;
-//   fn expression();
-// }
-
-// struct Program<e: Statement<'a>> {
-//   statements: 'a Vec<T>,
-// }
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -79,10 +59,14 @@ mod tests {
   fn test_it() {
     assert_eq!(
       parse("let x = 5;"),
-      Program(vec![Statement::Let(
-        "x".to_string(),
-        Expression::Literal(5)
-      ),])
+      Program(vec![Stmt {
+        node: StmtKind::Let(LetStmt {
+          name: Ident("x"),
+          value: Expr {
+            node: ExprKind::Literal(5)
+          }
+        })
+      }])
     );
   }
 }
