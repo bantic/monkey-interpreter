@@ -1,7 +1,6 @@
 use super::lexer;
 use super::token;
 use std::cell::{Cell, RefCell};
-use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub struct Ident<'a>(&'a str);
@@ -11,6 +10,7 @@ pub struct Expr {
   node: ExprKind,
 }
 
+#[allow(dead_code)]
 enum LiteralKind {
   Int(i32),
   Char(),
@@ -51,10 +51,16 @@ pub struct LetStmt<'a> {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct ReturnStmt {
+  value: Expr,
+}
+
+#[derive(Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum StmtKind<'a> {
   Bad,
   Let(LetStmt<'a>),
+  Return(ReturnStmt),
 }
 
 #[derive(Debug, PartialEq)]
@@ -95,6 +101,7 @@ impl<'a> Parser<'a> {
       match self.cur.get() {
         token::Token::Eof => break,
         token::Token::Let => p.stmts.push(self.parse_let_stmt()),
+        token::Token::Return => p.stmts.push(self.parse_return_stmt()),
         _ => break,
       }
       self.next_token();
@@ -154,12 +161,48 @@ impl<'a> Parser<'a> {
       }
     }
   }
+
+  fn parse_return_stmt(&self) -> Stmt {
+    self.next_token();
+
+    // parseExpression
+    while self.cur.get() != token::Token::Semicolon {
+      self.next_token();
+    }
+
+    return Stmt {
+      node: StmtKind::Return(ReturnStmt {
+        value: Expr {
+          node: ExprKind::Literal(1337),
+        },
+      }),
+    };
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
 
+  #[test]
+  fn test_simple_return_statement() {
+    let lexer = lexer::Lexer::new("return = 1. 89- {}{!!!}!@#$%^&* 5;");
+    let parser = Parser::new(&lexer);
+    let s = parser.parse();
+
+    assert_eq!(
+      s,
+      Program {
+        stmts: vec![Stmt {
+          node: StmtKind::Return(ReturnStmt {
+            value: Expr {
+              node: ExprKind::Literal(1337)
+            }
+          })
+        }]
+      }
+    );
+  }
   #[test]
   fn test_simple_let_statement() {
     let lexer = lexer::Lexer::new("let x = 5;");
