@@ -27,6 +27,7 @@ pub enum Token<'a> {
   True,
   False,
   Return,
+  #[allow(dead_code)]
   Debug,
 }
 

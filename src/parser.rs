@@ -11,6 +11,7 @@ pub struct Expr {
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 enum ExprKind {
   Literal(i32),
   Ident(String),
@@ -22,12 +23,13 @@ struct Stmt<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-struct LetStmt<'a> {
+pub struct LetStmt<'a> {
   name: Ident<'a>,
   value: Expr,
 }
 
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum StmtKind<'a> {
   Let(LetStmt<'a>),
 }
@@ -35,12 +37,14 @@ pub enum StmtKind<'a> {
 #[derive(Debug, PartialEq)]
 pub struct Program<'a>(Vec<Stmt<'a>>);
 
+#[allow(dead_code)]
 pub struct Parser<'a> {
   lex: &'a lexer::Lexer<'a>,
   cur: Cell<token::Token<'a>>,
   peek: Cell<token::Token<'a>>,
 }
 
+#[allow(dead_code)]
 impl<'a> Parser<'a> {
   pub fn new(lex: &'a lexer::Lexer) -> Parser<'a> {
     let cur = lex.next_token();
