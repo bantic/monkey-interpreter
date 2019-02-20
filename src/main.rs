@@ -14,6 +14,7 @@ fn main() {
     let lex = lexer::Lexer::new(&line);
     let parser = parser::Parser::new(&lex);
     println!("AST: {:?}", parser.parse());
+    println!("errors: {:?}", parser.errors);
     let lex = lexer::Lexer::new(&line);
     println!("Tokens:");
     loop {

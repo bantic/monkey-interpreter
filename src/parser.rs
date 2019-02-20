@@ -1,6 +1,7 @@
 use super::lexer;
 use super::token;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub struct Ident<'a>(&'a str);
@@ -8,6 +9,27 @@ pub struct Ident<'a>(&'a str);
 #[derive(Debug, PartialEq)]
 pub struct Expr {
   node: ExprKind,
+}
+
+enum LiteralKind {
+  Int(i32),
+  Char(),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ParseErr {
+  msg: String,
+}
+
+impl ParseErr {
+  pub fn new(expected: &token::Token, actual: &token::Token) -> ParseErr {
+    ParseErr {
+      msg: format!(
+        "expected next token to be {:?}, but got {:?}",
+        expected, actual
+      ),
+    }
+  }
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,17 +53,21 @@ pub struct LetStmt<'a> {
 #[derive(Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum StmtKind<'a> {
+  Bad,
   Let(LetStmt<'a>),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Program<'a>(Vec<Stmt<'a>>);
+pub struct Program<'a> {
+  stmts: Vec<Stmt<'a>>,
+}
 
 #[allow(dead_code)]
 pub struct Parser<'a> {
   lex: &'a lexer::Lexer<'a>,
   cur: Cell<token::Token<'a>>,
   peek: Cell<token::Token<'a>>,
+  pub errors: RefCell<Vec<ParseErr>>,
 }
 
 #[allow(dead_code)]
@@ -53,6 +79,7 @@ impl<'a> Parser<'a> {
       lex,
       cur: Cell::new(cur),
       peek: Cell::new(peek),
+      errors: RefCell::new(vec![]),
     }
   }
 
@@ -62,14 +89,12 @@ impl<'a> Parser<'a> {
   }
 
   pub fn parse(&self) -> Program {
-    let mut p = Program(vec![]);
+    let mut p = Program { stmts: vec![] };
 
     loop {
       match self.cur.get() {
         token::Token::Eof => break,
-        token::Token::Let => {
-          p.0.push(self.parse_let_stmt());
-        }
+        token::Token::Let => p.stmts.push(self.parse_let_stmt()),
         _ => break,
       }
       self.next_token();
@@ -78,7 +103,8 @@ impl<'a> Parser<'a> {
   }
 
   pub fn expect_peek(&self, t: token::Token) -> bool {
-    let is_match = match (self.peek.get(), t) {
+    let peeked = self.peek.get();
+    let is_match = match (peeked, t) {
       (token::Token::Ident(_), token::Token::Ident(_)) => true,
       (token::Token::Int(_), token::Token::Int(_)) => true,
       (peek, t) => peek == t,
@@ -86,36 +112,46 @@ impl<'a> Parser<'a> {
 
     if is_match {
       self.next_token()
+    } else {
+      self.errors.borrow_mut().push(ParseErr::new(&t, &peeked))
     }
 
     is_match
   }
 
   fn parse_let_stmt(&self) -> Stmt {
+    let mut is_bad: bool = false;
+
     if !self.expect_peek(token::Token::Ident("")) {
-      panic!("Expected ident");
-    };
+      is_bad = true;
+    }
 
     let name = match self.cur.get() {
-      token::Token::Ident(name) => name,
-      _ => panic!("Expected ident"),
+      token::Token::Ident(name) => Some(name),
+      _ => None,
     };
 
     if !self.expect_peek(token::Token::Assign) {
-      panic!("Expected assign");
+      is_bad = true;
     }
 
     while self.cur.get() != token::Token::Semicolon {
       self.next_token();
     }
 
-    Stmt {
-      node: StmtKind::Let(LetStmt {
-        name: Ident(name),
-        value: Expr {
-          node: ExprKind::Literal(5),
-        },
-      }),
+    if is_bad {
+      Stmt {
+        node: StmtKind::Bad,
+      }
+    } else {
+      Stmt {
+        node: StmtKind::Let(LetStmt {
+          name: Ident(name.unwrap()),
+          value: Expr {
+            node: ExprKind::Literal(5),
+          },
+        }),
+      }
     }
   }
 }
@@ -131,14 +167,16 @@ mod tests {
     let s = parser.parse();
     assert_eq!(
       s,
-      Program(vec![Stmt {
-        node: StmtKind::Let(LetStmt {
-          name: Ident("x"),
-          value: Expr {
-            node: ExprKind::Literal(5)
-          }
-        })
-      }])
+      Program {
+        stmts: vec![Stmt {
+          node: StmtKind::Let(LetStmt {
+            name: Ident("x"),
+            value: Expr {
+              node: ExprKind::Literal(5)
+            }
+          })
+        }]
+      }
     );
   }
 }
