@@ -1,9 +1,9 @@
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Token<'a> {
+pub enum TokenKind {
   Illegal,
   Eof,
-  Ident(&'a str),
-  Int(i64),
+  Ident,
+  Int,
   Assign,
   Eq,
   NotEq,
@@ -31,16 +31,23 @@ pub enum Token<'a> {
   Debug,
 }
 
-pub fn lookup_ident(str: &str) -> Token {
-  match str {
-    "fn" => Token::Function,
-    "let" => Token::Let,
-    "if" => Token::If,
-    "true" => Token::True,
-    "false" => Token::False,
-    "else" => Token::Else,
-    "return" => Token::Return,
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Token<'a> {
+  pub kind: TokenKind,
+  pub literal: &'a str,
+}
 
-    _ => Token::Ident(str),
+pub fn lookup_kind(str: &str) -> TokenKind {
+  use TokenKind::*;
+  match str {
+    "fn" => Function,
+    "let" => Let,
+    "if" => If,
+    "true" => True,
+    "false" => False,
+    "else" => Else,
+    "return" => Return,
+
+    _ => Ident,
   }
 }
