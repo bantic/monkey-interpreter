@@ -3,6 +3,18 @@ use super::token::*;
 use std::cell::{Cell, RefCell};
 use std::fmt;
 
+#[derive(PartialEq, PartialOrd, Debug, Eq, Ord)]
+#[allow(dead_code)]
+enum OpPrecedence {
+  LOWEST,
+  EQUALS,
+  LESSGREATER,
+  SUM,
+  PRODUCT,
+  PREFIX,
+  CALL,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Ident<'a>(&'a str);
 impl<'a> fmt::Display for Ident<'a> {
@@ -49,6 +61,7 @@ enum ExprKind {
   Literal(i32),
   Ident(String),
 }
+
 impl<'a> fmt::Display for ExprKind {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
@@ -81,10 +94,21 @@ pub struct ReturnStmt {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct ExprStmt {
+  value: Expr,
+}
+
+impl<'a> fmt::Display for ExprStmt {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{}", self.value)
+  }
+}
+
+#[derive(Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum StmtKind<'a> {
   Bad,
-  // Expr(ExprStmt<'a>),
+  Expr(ExprStmt),
   Let(LetStmt<'a>),
   Return(ReturnStmt),
 }
@@ -95,6 +119,7 @@ impl<'a> fmt::Display for StmtKind<'a> {
       StmtKind::Bad => write!(f, "Bad!"),
       StmtKind::Let(let_stmt) => write!(f, "let {} = {};", let_stmt.name, let_stmt.value),
       StmtKind::Return(ret_stmt) => write!(f, "return {};", ret_stmt.value),
+      StmtKind::Expr(expr_stmt) => write!(f, "{}", expr_stmt),
     }
   }
 }
@@ -134,6 +159,10 @@ impl<'a> Parser<'a> {
     }
   }
 
+  pub fn my_fn(&self) -> () {
+    ()
+  }
+
   pub fn next_token(&self) {
     self.cur.set(self.peek.get());
     self.peek.set(self.lex.next_token());
@@ -147,7 +176,7 @@ impl<'a> Parser<'a> {
         TokenKind::Eof => break,
         TokenKind::Let => p.stmts.push(self.parse_let_stmt()),
         TokenKind::Return => p.stmts.push(self.parse_return_stmt()),
-        _ => break,
+        _ => p.stmts.push(self.parse_expression_stmt()),
       }
       self.next_token();
     }
@@ -168,6 +197,26 @@ impl<'a> Parser<'a> {
     }
 
     is_match
+  }
+
+  fn parse_expression(&self, _precedence: OpPrecedence) -> Option<Expr> {
+    // TODO -- make this return a real Expr
+    None
+  }
+
+  fn parse_expression_stmt(&self) -> Stmt {
+    let expr = self.parse_expression(OpPrecedence::LOWEST);
+
+    if self.peek.get().kind == TokenKind::Semicolon {
+      self.next_token();
+    }
+
+    return Stmt {
+      // TODO This unwrap will fail
+      node: StmtKind::Expr(ExprStmt {
+        value: expr.unwrap(),
+      }),
+    };
   }
 
   fn parse_let_stmt(&self) -> Stmt {
@@ -263,6 +312,24 @@ mod tests {
             name: Ident("x"),
             value: Expr {
               node: ExprKind::Literal(5)
+            }
+          })
+        }]
+      }
+    );
+  }
+  #[test]
+  fn test_simple_expression_statement() {
+    let lexer = lexer::Lexer::new("foobar;");
+    let parser = Parser::new(&lexer);
+    let s = parser.parse();
+    assert_eq!(
+      s,
+      Program {
+        stmts: vec![Stmt {
+          node: StmtKind::Expr(ExprStmt {
+            value: Expr {
+              node: ExprKind::Ident("foobar".into())
             }
           })
         }]

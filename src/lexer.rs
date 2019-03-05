@@ -153,7 +153,7 @@ fn is_valid_letter(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-  use super::{Lexer, Token, TokenKind};
+  use super::{Lexer, TokenKind};
 
   #[test]
   fn check_lex() {
